@@ -142,6 +142,7 @@ cdef class HuobiMarket(MarketBase):
 
     @staticmethod
     def split_trading_pair(trading_pair: str) -> Optional[Tuple[str, str]]:
+        raise NotImplementedError("Function split_trading_pair not implemented yet for Probit.")
         try:
             m = TRADING_PAIR_SPLITTER.match(trading_pair)
             return m.group(1), m.group(2)
@@ -151,6 +152,7 @@ cdef class HuobiMarket(MarketBase):
 
     @staticmethod
     def convert_from_exchange_trading_pair(exchange_trading_pair: str) -> Optional[str]:
+        raise NotImplementedError("Function convert_from_exchange_trading_pair not implemented yet for Probit.")
         if HuobiMarket.split_trading_pair(exchange_trading_pair) is None:
             return None
         # Huobi uses lowercase (btcusdt)
@@ -159,11 +161,13 @@ cdef class HuobiMarket(MarketBase):
 
     @staticmethod
     def convert_to_exchange_trading_pair(hb_trading_pair: str) -> str:
+        raise NotImplementedError("Function convert_to_exchange_trading_pair not implemented yet for Probit.")
         # Huobi uses lowercase (btcusdt)
         return hb_trading_pair.replace("-", "").lower()
 
     @property
     def name(self) -> str:
+        raise NotImplementedError("Function name not implemented yet for Probit.")
         return "huobi"
 
     @property
@@ -184,6 +188,7 @@ cdef class HuobiMarket(MarketBase):
 
     @property
     def limit_orders(self) -> List[LimitOrder]:
+        raise NotImplementedError("Function limit_orders not implemented yet for Probit.")
         return [
             in_flight_order.to_limit_order()
             for in_flight_order in self._in_flight_orders.values()
@@ -191,12 +196,14 @@ cdef class HuobiMarket(MarketBase):
 
     @property
     def tracking_states(self) -> Dict[str, Any]:
+        raise NotImplementedError("Function tracking_states not implemented yet for Probit.")
         return {
             key: value.to_json()
             for key, value in self._in_flight_orders.items()
         }
 
     def restore_tracking_states(self, saved_states: Dict[str, Any]):
+        raise NotImplementedError("Function restore_tracking_states not implemented yet for Probit.")
         self._in_flight_orders.update({
             key: HuobiInFlightOrder.from_json(value)
             for key, value in saved_states.items()
@@ -314,6 +321,7 @@ cdef class HuobiMarket(MarketBase):
             return data
 
     async def _update_account_id(self) -> str:
+        raise NotImplementedError("Function _update_account_id not implemented yet for Probit.")
         accounts = await self._api_request("get", path_url="account/accounts", is_auth_required=True)
         try:
             for account in accounts:
@@ -323,6 +331,7 @@ cdef class HuobiMarket(MarketBase):
             raise ValueError(f"Unable to retrieve account id: {e}")
 
     async def _update_balances(self):
+        raise NotImplementedError("Function _update_balances not implemented yet for Probit.")
         cdef:
             str path_url = f"account/accounts/{self._account_id}/balance"
             dict data
@@ -361,6 +370,7 @@ cdef class HuobiMarket(MarketBase):
                           object order_side,
                           object amount,
                           object price):
+        raise NotImplementedError("Function c_get_fee not implemented yet for Probit.")
         # https://www.hbg.com/en-us/about/fee/
         """
 
@@ -374,6 +384,7 @@ cdef class HuobiMarket(MarketBase):
         return estimate_fee("huobi", is_maker)
 
     async def _update_trading_rules(self):
+        raise NotImplementedError("Function _update_trading_rules not implemented yet for Probit.")
         cdef:
             # The poll interval for trade rules is 60 seconds.
             int64_t last_tick = <int64_t>(self._last_timestamp / 60.0)
@@ -386,6 +397,7 @@ cdef class HuobiMarket(MarketBase):
                 self._trading_rules[trading_rule.trading_pair] = trading_rule
 
     def _format_trading_rules(self, raw_trading_pair_info: List[Dict[str, Any]]) -> List[TradingRule]:
+        raise NotImplementedError("Function _format_trading_rules not implemented yet for Probit.")
         cdef:
             list trading_rules = []
 
@@ -405,6 +417,7 @@ cdef class HuobiMarket(MarketBase):
         return trading_rules
 
     async def get_order_status(self, exchange_order_id: str) -> Dict[str, Any]:
+        raise NotImplementedError("Function get_order_status not implemented yet for Probit.")
         """
         Example:
         {
@@ -431,6 +444,7 @@ cdef class HuobiMarket(MarketBase):
         return await self._api_request("get", path_url=path_url, is_auth_required=True)
 
     async def _update_order_status(self):
+        raise NotImplementedError("Function _update_order_status not implemented yet for Probit.")
         cdef:
             # The poll interval for order status is 10 seconds.
             int64_t last_tick = <int64_t>(self._last_poll_timestamp / self.UPDATE_ORDERS_INTERVAL)
@@ -583,6 +597,7 @@ cdef class HuobiMarket(MarketBase):
 
     @property
     def status_dict(self) -> Dict[str, bool]:
+        raise NotImplementedError("Function status_dict not implemented yet for Probit.")
         return {
             "account_id_initialized": self._account_id != "" if self._trading_required else True,
             "order_books_initialized": self._order_book_tracker.ready,
@@ -601,6 +616,7 @@ cdef class HuobiMarket(MarketBase):
                           is_buy: bool,
                           order_type: OrderType,
                           price: Decimal) -> str:
+        raise NotImplementedError("Function place_order not implemented yet for Probit.")
         path_url = "order/orders/place"
         side = "buy" if is_buy else "sell"
         order_type_str = "limit" if order_type is OrderType.LIMIT else "market"
@@ -628,6 +644,7 @@ cdef class HuobiMarket(MarketBase):
                           amount: Decimal,
                           order_type: OrderType,
                           price: Optional[Decimal] = s_decimal_0):
+        raise NotImplementedError("Function execute_buy not implemented yet for Probit.")
         cdef:
             TradingRule trading_rule = self._trading_rules[trading_pair]
             object quote_amount
@@ -691,6 +708,7 @@ cdef class HuobiMarket(MarketBase):
                    object order_type=OrderType.MARKET,
                    object price=s_decimal_0,
                    dict kwargs={}):
+        raise NotImplementedError("Function c_buy not implemented yet for Probit.")
         cdef:
             int64_t tracking_nonce = <int64_t> get_tracking_nonce()
             str order_id = f"buy-{trading_pair}-{tracking_nonce}"
@@ -704,6 +722,7 @@ cdef class HuobiMarket(MarketBase):
                            amount: Decimal,
                            order_type: OrderType,
                            price: Optional[Decimal] = s_decimal_0):
+        raise NotImplementedError("Function execute_sell not implemented yet for Probit.")
         cdef:
             TradingRule trading_rule = self._trading_rules[trading_pair]
             object decimal_amount
@@ -762,6 +781,7 @@ cdef class HuobiMarket(MarketBase):
                     object amount,
                     object order_type=OrderType.MARKET, object price=s_decimal_0,
                     dict kwargs={}):
+        raise NotImplementedError("Function c_sell not implemented yet for Probit.")
         cdef:
             int64_t tracking_nonce = <int64_t> get_tracking_nonce()
             str order_id = f"sell-{trading_pair}-{tracking_nonce}"
@@ -769,6 +789,7 @@ cdef class HuobiMarket(MarketBase):
         return order_id
 
     async def execute_cancel(self, trading_pair: str, order_id: str):
+        raise NotImplementedError("Function execute_cancel not implemented yet for Probit.")
         try:
             tracked_order = self._in_flight_orders.get(order_id)
             if tracked_order is None:
@@ -807,6 +828,7 @@ cdef class HuobiMarket(MarketBase):
         return order_id
 
     async def cancel_all(self, timeout_seconds: float) -> List[CancellationResult]:
+        raise NotImplementedError("Function cancel_all not implemented yet for Probit.")
         open_orders = [o for o in self._in_flight_orders.values() if o.is_open]
         if len(open_orders) == 0:
             return []

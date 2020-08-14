@@ -33,6 +33,7 @@ cdef class HuobiOrderBook(OrderBook):
                                        msg: Dict[str, Any],
                                        timestamp: Optional[float] = None,
                                        metadata: Optional[Dict] = None) -> OrderBookMessage:
+        raise NotImplementedError("Function snapshot_message_from_exchange not implemented yet for Probit.")
         if metadata:
             msg.update(metadata)
         msg_ts = int(msg["ts"] * 1e-3)
@@ -49,6 +50,7 @@ cdef class HuobiOrderBook(OrderBook):
                                    msg: Dict[str, Any],
                                    timestamp: Optional[float] = None,
                                    metadata: Optional[Dict] = None) -> OrderBookMessage:
+        raise NotImplementedError("Function trade_message_from_exchange not implemented yet for Probit.")
         if metadata:
             msg.update(metadata)
         msg_ts = int(msg["ts"] * 1e-3)
@@ -67,6 +69,7 @@ cdef class HuobiOrderBook(OrderBook):
                                    msg: Dict[str, Any],
                                    timestamp: Optional[float] = None,
                                    metadata: Optional[Dict] = None) -> OrderBookMessage:
+        raise NotImplementedError("Function diff_message_from_exchange not implemented yet for Probit.")
         if metadata:
             msg.update(metadata)
         msg_ts = int(msg["ts"] * 1e-3)
@@ -80,6 +83,7 @@ cdef class HuobiOrderBook(OrderBook):
 
     @classmethod
     def snapshot_message_from_db(cls, record: RowProxy, metadata: Optional[Dict] = None) -> OrderBookMessage:
+        raise NotImplementedError("Function snapshot_message_from_db not implemented yet for Probit.")
         ts = record["timestamp"]
         msg = record["json"] if type(record["json"])==dict else ujson.loads(record["json"])
         if metadata:
@@ -94,6 +98,7 @@ cdef class HuobiOrderBook(OrderBook):
 
     @classmethod
     def diff_message_from_db(cls, record: RowProxy, metadata: Optional[Dict] = None) -> OrderBookMessage:
+        raise NotImplementedError("Function diff_message_from_db not implemented yet for Probit.")
         ts = record["timestamp"]
         msg = record["json"] if type(record["json"])==dict else ujson.loads(record["json"])
         if metadata:
@@ -107,6 +112,7 @@ cdef class HuobiOrderBook(OrderBook):
 
     @classmethod
     def snapshot_message_from_kafka(cls, record: ConsumerRecord, metadata: Optional[Dict] = None) -> OrderBookMessage:
+        raise NotImplementedError("Function snapshot_message_from_kafka not implemented yet for Probit.")
         ts = record.timestamp
         msg = ujson.loads(record.value.decode())
         if metadata:
@@ -120,6 +126,7 @@ cdef class HuobiOrderBook(OrderBook):
 
     @classmethod
     def diff_message_from_kafka(cls, record: ConsumerRecord, metadata: Optional[Dict] = None) -> OrderBookMessage:
+        raise NotImplementedError("Function diff_message_from_kafka not implemented yet for Probit.")
         decompressed = bz2.decompress(record.value)
         msg = ujson.loads(decompressed)
         ts = record.timestamp
@@ -134,6 +141,7 @@ cdef class HuobiOrderBook(OrderBook):
 
     @classmethod
     def trade_message_from_db(cls, record: RowProxy, metadata: Optional[Dict] = None):
+        raise NotImplementedError("Function trade_message_from_db not implemented yet for Probit.")
         msg = record["json"]
         ts = record.timestamp
         data = msg["tick"]["data"][0]
@@ -151,6 +159,7 @@ cdef class HuobiOrderBook(OrderBook):
 
     @classmethod
     def from_snapshot(cls, msg: OrderBookMessage) -> "OrderBook":
+        raise NotImplementedError("Function from_snapshot not implemented yet for Probit.")
         retval = HuobiOrderBook()
         retval.apply_snapshot(msg.bids, msg.asks, msg.update_id)
         return retval

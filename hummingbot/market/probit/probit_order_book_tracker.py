@@ -43,10 +43,12 @@ class HuobiOrderBookTracker(OrderBookTracker):
 
     @property
     def exchange_name(self) -> str:
+        raise NotImplementedError("Function exchange_name not implemented yet for Probit.")
         return "huobi"
 
     @property
     def data_source(self) -> OrderBookTrackerDataSource:
+        raise NotImplementedError("Function data_source not implemented yet for Probit.")
         if not self._data_source:
             if self._data_source_type is OrderBookTrackerDataSourceType.EXCHANGE_API:
                 self._data_source = HuobiAPIOrderBookDataSource(trading_pairs=self._trading_pairs)
@@ -59,6 +61,7 @@ class HuobiOrderBookTracker(OrderBookTracker):
         self._data_source = data_source
 
     async def _order_book_diff_router(self):
+        raise NotImplementedError("Function _order_book_diff_router not implemented yet for Probit.")
         """
         Route the real-time order book diff messages to the correct order book.
         """
@@ -107,6 +110,7 @@ class HuobiOrderBookTracker(OrderBookTracker):
                 await asyncio.sleep(5.0)
 
     async def _track_single_book(self, trading_pair: str):
+        raise NotImplementedError("Function _track_single_book not implemented yet for Probit.")
         message_queue: asyncio.Queue = self._tracking_message_queues[trading_pair]
         order_book: OrderBook = self._order_books[trading_pair]
         last_message_timestamp: float = time.time()

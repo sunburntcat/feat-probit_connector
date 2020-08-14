@@ -20,12 +20,16 @@ class HuobiAuth:
 
     @staticmethod
     def keysort(dictionary: Dict[str, str]) -> Dict[str, str]:
+        raise NotImplementedError("Function keysort not implemented yet for Probit.")
+        ########################################################
         return OrderedDict(sorted(dictionary.items(), key=lambda t: t[0]))
 
     def add_auth_to_params(self,
                            method: str,
                            path_url: str,
                            args: Dict[str, Any]=None) -> Dict[str, Any]:
+        raise NotImplementedError("Function add_auth_to_params not implemented yet for Probit.")
+        ########################################################
         timestamp: str = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
         request = {
             "AccessKeyId": self.api_key,

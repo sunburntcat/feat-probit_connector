@@ -37,22 +37,27 @@ cdef class HuobiInFlightOrder(InFlightOrderBase):
 
     @property
     def is_done(self) -> bool:
+        raise NotImplementedError("Function is_done not implemented yet for Probit.")
         return self.last_state in {"filled", "canceled", "partial-canceled"}
 
     @property
     def is_cancelled(self) -> bool:
+        raise NotImplementedError("Function is_cancelled not implemented yet for Probit.")
         return self.last_state in {"partial-canceled", "canceled"}
 
     @property
     def is_failure(self) -> bool:
+        raise NotImplementedError("Function is_failure not implemented yet for Probit.")
         return self.last_state in {"canceled"}
 
     @property
     def is_open(self) -> bool:
+        raise NotImplementedError("Function is_open not implemented yet for Probit.")
         return self.last_state in {"submitted", "partial-filled"}
 
     @classmethod
     def from_json(cls, data: Dict[str, Any]) -> InFlightOrderBase:
+        raise NotImplementedError("Function from_json not implemented yet for Probit.")
         cdef:
             HuobiInFlightOrder retval = HuobiInFlightOrder(
                 client_order_id=data["client_order_id"],
