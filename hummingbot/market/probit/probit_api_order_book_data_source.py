@@ -26,10 +26,10 @@ from hummingbot.core.utils.async_utils import safe_gather
 from hummingbot.logger import HummingbotLogger
 from hummingbot.market.huobi.huobi_order_book import HuobiOrderBook
 
-HUOBI_SYMBOLS_URL = "https://api.huobi.pro/v1/common/symbols"
-HUOBI_TICKER_URL = "https://api.huobi.pro/market/tickers"
-HUOBI_DEPTH_URL = "https://api.huobi.pro/market/depth"
-HUOBI_WS_URI = "wss://api.huobi.pro/ws"
+PROBIT_SYMBOLS_URL = "https://api.probit.com/api/exchange/v1/market"
+PROBIT_TICKER_URL = "https://api.probit.com/api/exchange/v1/ticker"
+PROBIT_DEPTH_URL = "https://api.probit.com/api/exchange/v1/order_book"
+PROBIT_WS_URI = ""  # Ignoring WS data connector for now
 
 
 class HuobiAPIOrderBookDataSource(OrderBookTrackerDataSource):
@@ -55,7 +55,46 @@ class HuobiAPIOrderBookDataSource(OrderBookTrackerDataSource):
         """
         Returned data frame should have trading pair as index and include usd volume, baseAsset and quoteAsset
         """
-        raise NotImplementedError("Function get_active_exchange_markets not implemented yet for Probit.")
+        #raise NotImplementedError("Function get_active_exchange_markets not implemented yet for Probit.")
+        async with aiohttp.ClientSession() as client:
+
+            market_response, exchange_response = await safe_gather(
+                client.get(PROBIT_TICKER_URL),
+                client.get(PROBIT_SYMBOLS_URL)
+            )
+            market_response: aiohttp.ClientResponse = market_response
+            exchange_response: aiohttp.ClientResponse = exchange_response
+
+            if market_response.status != 200:
+                raise IOError(f"Error fetching Probit markets information. "
+                              f"HTTP status is {market_response.status}.")
+            if exchange_response.status != 200:
+                raise IOError(f"Error fetching Probit exchange information. "
+                              f"HTTP status is {exchange_response.status}.")
+
+            market_data = await market_response.json()
+            exchange_data = await exchange_response.json()
+
+            attr_name_map = {"base_currency_id": "baseAsset", "quote_currency_id": "quoteAsset"}
+
+            trading_pairs: Dict[str, Any] = {
+                item["id"]: {attr_name_map[k]: item[k] for k in ["base_currency_id", "quote_currency_id"]}
+                for item in exchange_data["data"]
+                #if item["state"] == "online" # Not relevant for Probit
+            }
+
+            market_data: List[Dict[str, Any]] = [
+                {**item, **trading_pairs[item["market_id"]]}
+                for item in market_data["data"]
+                if item["market_id"] in trading_pairs
+            ]
+
+            # Build the data frame.
+            all_markets: pd.DataFrame = pd.DataFrame.from_records(data=market_data, index="market_id")
+            all_markets.loc[:, "USDVolume"] = all_markets.quote_volume
+            all_markets.loc[:, "volume"] = all_markets.base_volume
+
+            return all_markets.sort_values("USDVolume", ascending=False)
 
     async def get_trading_pairs(self) -> List[str]:
         raise NotImplementedError("Function get_trading_pairs not implemented yet for Probit.")
