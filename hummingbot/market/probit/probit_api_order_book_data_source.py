@@ -97,14 +97,59 @@ class HuobiAPIOrderBookDataSource(OrderBookTrackerDataSource):
             return all_markets.sort_values("USDVolume", ascending=False)
 
     async def get_trading_pairs(self) -> List[str]:
-        raise NotImplementedError("Function get_trading_pairs not implemented yet for Probit.")
+        if not self._trading_pairs:
+            try:
+                active_markets: pd.DataFrame = await self.get_active_exchange_markets()
+                self._trading_pairs = active_markets.index.tolist()
+            except Exception:
+                self._trading_pairs = []
+                self.logger().network(
+                    f"Error getting active exchange information.",
+                    exc_info=True,
+                    app_warning_msg=f"Error getting active exchange information. Check network connection."
+                )
+        return self._trading_pairs
 
     @staticmethod
     async def get_snapshot(client: aiohttp.ClientSession, trading_pair: str) -> Dict[str, Any]:
-        raise NotImplementedError("Function get_snapshot not implemented yet for Probit.")
+        # when type is set to "step0", the default value of "depth" is 150
+        params: Dict = {"market_id": trading_pair}
+        async with client.get(PROBIT_DEPTH_URL, params=params) as response:
+            response: aiohttp.ClientResponse = response
+            if response.status != 200:
+                raise IOError(f"Error fetching Huobi market snapshot for {trading_pair}. "
+                              f"HTTP status is {response.status}.")
+            api_data = await response.read()
+            data: Dict[str, Any] = json.loads(api_data)
+            return data
 
     async def get_tracking_pairs(self) -> Dict[str, OrderBookTrackerEntry]:
-        raise NotImplementedError("Function get_tracking_pairs not implemented yet for Probit.")
+        # Get the currently active markets
+        async with aiohttp.ClientSession() as client:
+            trading_pairs: List[str] = await self.get_trading_pairs()
+            retval: Dict[str, OrderBookTrackerEntry] = {}
+
+            number_of_pairs: int = len(trading_pairs)
+            for index, trading_pair in enumerate(trading_pairs):
+                try:
+                    snapshot: Dict[str, Any] = await self.get_snapshot(client, trading_pair)
+                    snapshot_msg: OrderBookMessage = ProbitOrderBook.snapshot_message_from_exchange(
+                        snapshot,
+                        metadata={"trading_pair": trading_pair}
+                    )
+                    # NICK The following bids/asks look like they come from the OrderBook and not directly from exchange api
+                    #  ... therefore no changes were made from Huobi implementation
+                    order_book: OrderBook = self.order_book_create_function()
+                    order_book.apply_snapshot(snapshot_msg.bids, snapshot_msg.asks, snapshot_msg.update_id)
+                    retval[trading_pair] = OrderBookTrackerEntry(trading_pair, snapshot_msg.timestamp, order_book)
+                    self.logger().info(f"Initialized order book for {trading_pair}. "
+                                       f"{index + 1}/{number_of_pairs} completed.")
+                    # Huobi rate limit is 100 https requests per 10 seconds
+                    await asyncio.sleep(0.4)
+                except Exception:
+                    self.logger().error(f"Error getting snapshot for {trading_pair}. ", exc_info=True)
+                    await asyncio.sleep(5)
+            return retval
 
     async def _inner_messages(self,
                                 ws: websockets.WebSocketClientProtocol) -> AsyncIterable[str]:
@@ -118,4 +163,31 @@ class HuobiAPIOrderBookDataSource(OrderBookTrackerDataSource):
         raise NotImplementedError("Function listen_for_order_book_diffs not implemented yet for Probit.")
 
     async def listen_for_order_book_snapshots(self, ev_loop: asyncio.BaseEventLoop, output: asyncio.Queue):
-        raise NotImplementedError("Function listen_for_order_book_snapshots not implemented yet for Probit.")
+        while True:
+            try:
+                trading_pairs: List[str] = await self.get_trading_pairs()
+                async with aiohttp.ClientSession() as client:
+                    for trading_pair in trading_pairs:
+                        try:
+                            snapshot: Dict[str, Any] = await self.get_snapshot(client, trading_pair)
+                            snapshot_message: OrderBookMessage = HuobiOrderBook.snapshot_message_from_exchange(
+                                snapshot,
+                                metadata={"trading_pair": trading_pair}
+                            )
+                            output.put_nowait(snapshot_message)
+                            self.logger().debug(f"Saved order book snapshot for {trading_pair}")
+                            await asyncio.sleep(5.0)
+                        except asyncio.CancelledError:
+                            raise
+                        except Exception:
+                            self.logger().error("Unexpected error.", exc_info=True)
+                            await asyncio.sleep(5.0)
+                    this_hour: pd.Timestamp = pd.Timestamp.utcnow().replace(minute=0, second=0, microsecond=0)
+                    next_hour: pd.Timestamp = this_hour + pd.Timedelta(hours=1)
+                    delta: float = next_hour.timestamp() - time.time()
+                    await asyncio.sleep(delta)
+            except asyncio.CancelledError:
+                raise
+            except Exception:
+                self.logger().error("Unexpected error.", exc_info=True)
+                await asyncio.sleep(5.0)
