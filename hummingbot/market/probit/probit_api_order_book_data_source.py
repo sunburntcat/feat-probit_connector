@@ -81,6 +81,7 @@ class HuobiAPIOrderBookDataSource(OrderBookTrackerDataSource):
                 item["id"]: {attr_name_map[k]: item[k] for k in ["base_currency_id", "quote_currency_id"]}
                 for item in exchange_data["data"]
                 #if item["state"] == "online" # Not relevant for Probit
+                if True
             }
 
             market_data: List[Dict[str, Any]] = [

@@ -36,14 +36,22 @@ cdef class HuobiOrderBook(OrderBook):
         raise NotImplementedError("Function snapshot_message_from_exchange not implemented yet for Probit.")
         if metadata:
             msg.update(metadata)
-        msg_ts = int(msg["ts"] * 1e-3)
+        bids = []
+        asks = []
+        # Probit order book response doesn't separate bids and asks
+        for entry in msg["data"]:
+            if entry["side"] == 'buy':
+                bids.append([entry["price"], entry["quantity"]])
+            elif entry["side"] == 'sell'
+                asks.append([entry["price"], entry["quantity"]])
+
         content = {
-            "trading_pair": msg["trading_pair"],
-            "update_id": msg_ts,
-            "bids": msg["tick"]["bids"],
-            "asks": msg["tick"]["asks"]
+            "trading_pair": msg["market_id"],
+            "update_id": timestamp * 1e-3,
+            "bids": bids
+            "asks": asks
         }
-        return OrderBookMessage(OrderBookMessageType.SNAPSHOT, content, timestamp or msg_ts)
+        return OrderBookMessage(OrderBookMessageType.SNAPSHOT, content, timestamp)
 
     @classmethod
     def trade_message_from_exchange(cls,
@@ -53,7 +61,6 @@ cdef class HuobiOrderBook(OrderBook):
         raise NotImplementedError("Function trade_message_from_exchange not implemented yet for Probit.")
         if metadata:
             msg.update(metadata)
-        msg_ts = int(msg["ts"] * 1e-3)
         content = {
             "trading_pair": msg["trading_pair"],
             "trade_type": float(TradeType.SELL.value) if msg["direction"] == "buy" else float(TradeType.BUY.value),
@@ -62,7 +69,7 @@ cdef class HuobiOrderBook(OrderBook):
             "amount": msg["amount"],
             "price": msg["price"]
         }
-        return OrderBookMessage(OrderBookMessageType.DIFF, content, timestamp or msg_ts)
+        return OrderBookMessage(OrderBookMessageType.DIFF, content, timestamp)
 
     @classmethod
     def diff_message_from_exchange(cls,
@@ -72,14 +79,13 @@ cdef class HuobiOrderBook(OrderBook):
         raise NotImplementedError("Function diff_message_from_exchange not implemented yet for Probit.")
         if metadata:
             msg.update(metadata)
-        msg_ts = int(msg["ts"] * 1e-3)
         content = {
             "trading_pair": msg["ch"].split(".")[1],
             "update_id": msg_ts,
             "bids": msg["tick"]["bids"],
             "asks": msg["tick"]["asks"]
         }
-        return OrderBookMessage(OrderBookMessageType.DIFF, content, timestamp or msg_ts)
+        return OrderBookMessage(OrderBookMessageType.DIFF, content, timestamp)
 
     @classmethod
     def snapshot_message_from_db(cls, record: RowProxy, metadata: Optional[Dict] = None) -> OrderBookMessage:
