@@ -33,7 +33,6 @@ cdef class HuobiOrderBook(OrderBook):
                                        msg: Dict[str, Any],
                                        timestamp: Optional[float] = None,
                                        metadata: Optional[Dict] = None) -> OrderBookMessage:
-        raise NotImplementedError("Function snapshot_message_from_exchange not implemented yet for Probit.")
         if metadata:
             msg.update(metadata)
         bids = []
