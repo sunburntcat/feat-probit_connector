@@ -13,12 +13,12 @@ from hummingbot.core.data_type.order_book_row import OrderBookRow
 _btaot_logger = None
 s_empty_diff = np.ndarray(shape=(0, 4), dtype="float64")
 
-BittrexOrderBookTrackingDictionary = Dict[Decimal, Dict[str, Dict[str, any]]]
+ProbitOrderBookTrackingDictionary = Dict[Decimal, Dict[str, Dict[str, any]]]
 
-cdef class BittrexActiveOrderTracker:
+cdef class ProbitActiveOrderTracker:
     def __init__(self,
-                 active_asks: BittrexOrderBookTrackingDictionary = None,
-                 active_bids: BittrexOrderBookTrackingDictionary = None):
+                 active_asks: ProbitOrderBookTrackingDictionary = None,
+                 active_bids: ProbitOrderBookTrackingDictionary = None):
         super().__init__()
         self._active_asks = active_asks or {}
         self._active_bids = active_bids or {}
@@ -31,11 +31,11 @@ cdef class BittrexActiveOrderTracker:
         return _btaot_logger
 
     @property
-    def active_asks(self) -> BittrexOrderBookTrackingDictionary:
+    def active_asks(self) -> ProbitOrderBookTrackingDictionary:
         return self._active_asks
 
     @property
-    def active_bids(self) -> BittrexOrderBookTrackingDictionary:
+    def active_bids(self) -> ProbitOrderBookTrackingDictionary:
         return self._active_bids
 
     def volume_for_ask_price(self, price) -> float:
